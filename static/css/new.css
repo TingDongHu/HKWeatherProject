@@ -1,0 +1,80 @@
+.sidebar {
+    position: relative;
+    display: block;
+    padding: 20px;
+}
+.zi{
+    border-bottom: 2px solid #198DEEFF;
+    font-weight: bold;
+    color: #ff2424;
+    padding: 10px;
+    font-size: 16px;
+}
+a {
+    color: #000;
+    text-decoration: none
+}
+a:hover {
+    color: #8dc0ff
+}
+.left{
+    padding: 0px 5px;
+    width: 289px;
+    background-color: #d6e9ff;
+}
+.right{
+    width:850px;
+    float:right;
+    margin-right: 20px;
+}
+.a1 {
+    font-size: 14px;
+    font-weight: 400;
+    color: #090202;
+    background: url(https://www.kugou.com/common/images/icon_arrow_right_gray.png) no-repeat;
+    background-size: 16px;
+    background-position: right 2px;
+    padding-right: 19px;
+    padding-top: 2px;
+}
+.size{
+    height:110px;
+    width:110px;
+}
+.you{
+    float: right;
+}
+.zh{
+    margin: auto;
+    width: 136px;
+    top: 19px;
+}
+.juli{
+    width:410px;
+    padding: 10px;
+}
+.fen{
+    margin:auto;
+    padding-left: 290px;
+    padding-top: 20px;
+}
+.main{
+    margin-top: 160px;
+}
+.main_tui{
+    margin-top: 0px;
+}
+.app {
+    position: relative;
+}
+.app .download {
+    position: absolute;
+    display: none;
+    height: 100px;
+    width: 100px;
+}
+
+.app:hover .download {
+    display: block;
+}
+

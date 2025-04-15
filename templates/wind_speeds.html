@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风速数据分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/head.css') }}">
+    <style>
+        /* 保持原有样式不变 */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+
+        .nav-sidebar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(75, 85, 192, 0.2);
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .loading-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-loading {
+            background-color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-success {
+            background-color: #28a745;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .station-selector {
+            margin-bottom: 15px;
+        }
+
+        .data-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .station-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<header class="header w">
+    <div class="logo">
+        <h1>
+            <a href="/index/">香港天气预测可视化系统</a>
+        </h1>
+    </div>
+</header>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <ul class="nav nav-sidebar">
+                <li><a href="/index/">首页</a></li>
+                <li><a href="/weather_forecast/">天气预测</a></li>
+                <li class="active"><a href="/wind_speeds/" class="zi" style="color:black">风速分析</a></li>
+                <li><a href="/rose/">风向分析</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="loading-status">
+                <div>
+                    <span id="status-indicator" class="status-indicator status-loading"></span>
+                    <span id="status-text">数据加载中...</span>
+                </div>
+                <div id="data-stats" class="text-muted"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 站点选择控制 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="station-controls">
+                <div class="form-group">
+                    <label for="station-select">选择气象站:</label>
+                    <select class="form-control" id="station-select">
+                        <option value="長洲">長洲</option>
+                        <option value="赤鱲角">赤鱲角</option>
+                        <option value="香港天文台">香港天文台</option>
+                        <option value="黃竹坑">黃竹坑</option>
+                        <option value="將軍澳">將軍澳</option>
+                        <option value="流浮山">流浮山</option>
+                        <option value="坪洲">坪洲</option>
+                        <option value="石崗">石崗</option>
+                        <option value="沙田">沙田</option>
+                        <option value="西貢">西貢</option>
+                        <option value="打鼓嶺">打鼓嶺</option>
+                        <option value="大埔">大埔</option>
+                        <option value="屯門">屯門</option>
+                        <option value="青衣">青衣</option>
+                        <option value="橫瀾島">橫瀾島</option>
+                        <option value="上水">上水</option>
+                        <option value="承啟道多功能智慧燈柱">承啟道多功能智慧燈柱</option>
+                        <option value="觀塘市中心多功能智慧燈柱">觀塘市中心多功能智慧燈柱</option>
+                        <option value="旺角空氣質素監測站">旺角空氣質素監測站</option>
+                        <option value="天星碼頭(尖沙咀)">天星碼頭(尖沙咀)</option>
+                        <option value="大環山公園">大環山公園</option>
+                        <option value="啟德工業貿易大樓">啟德工業貿易大樓</option>
+                        <option value="香港中文大學(大學站)">香港中文大學(大學站)</option>
+                        <option value="香港中文大學(伍宜孫書院)">香港中文大學(伍宜孫書院)</option>
+                        <option value="保良局胡忠中學">保良局胡忠中學</option>
+                        <option value="香港海事博物館">香港海事博物館</option>
+                        <option value="維多利亞公園">維多利亞公園</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="days-select">显示天数:</label>
+                    <select class="form-control" id="days-select">
+                        <option value="7">最近7天</option>
+
+                    </select>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary">刷新数据</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="section-title">风速数据</h3>
+            <div class="data-info" id="wind-speed-info"></div>
+            <div class="chart-container" id="wind-speed-chart"></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="section-title">风速变化趋势</h3>
+            <div class="data-info" id="wind-trend-info"></div>
+            <div class="chart-container" id="wind-trend-chart"></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="section-title">风速统计</h3>
+            <div class="data-info" id="wind-stats-info"></div>
+            <div class="chart-container" id="wind-stats-chart"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 全局变量存储图表实例
+    let windSpeedChart, windTrendChart, windStatsChart;
+
+    // 状态管理函数
+    function updateStatus(status, message, stats = '') {
+        const indicator = document.getElementById('status-indicator');
+        const text = document.getElementById('status-text');
+        const statsEl = document.getElementById('data-stats');
+
+        indicator.className = 'status-indicator';
+
+        switch (status) {
+            case 'loading':
+                indicator.classList.add('status-loading');
+                text.textContent = message || '数据加载中...';
+                statsEl.textContent = '';
+                break;
+            case 'success':
+                indicator.classList.add('status-success');
+                text.textContent = message || '数据加载完成';
+                statsEl.textContent = stats;
+                break;
+            case 'error':
+                indicator.classList.add('status-error');
+                text.textContent = message || '数据加载失败';
+                statsEl.textContent = '';
+                break;
+        }
+    }
+
+    // 初始化风速图表
+    function initWindSpeedChart() {
+        const chart = echarts.init(document.getElementById('wind-speed-chart'));
+
+        const option = {
+            title: {
+                text: '风速数据 (km/h)',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                    return `${params[0].name}<br/>风速: ${params[0].value} km/h`;
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: []
+            },
+            yAxis: {
+                type: 'value',
+                name: '风速 (km/h)',
+                min: 'dataMin',
+                max: 'dataMax'
+            },
+            series: [{
+                name: '风速',
+                type: 'line',
+                smooth: true,
+                data: [],
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        {offset: 0, color: 'rgba(58, 77, 233, 0.8)'},
+                        {offset: 1, color: 'rgba(58, 77, 233, 0.1)'}
+                    ])
+                },
+                markPoint: {
+                    data: [
+                        {type: 'max', name: '最大值'},
+                        {type: 'min', name: '最小值'}
+                    ]
+                },
+                markLine: {
+                    data: [
+                        {type: 'average', name: '平均值'}
+                    ]
+                }
+            }]
+        };
+
+        chart.setOption(option);
+        return chart;
+    }
+
+    // 初始化风速趋势图表
+    function initWindTrendChart() {
+        const chart = echarts.init(document.getElementById('wind-trend-chart'));
+
+        const option = {
+            title: {
+                text: '风速变化趋势',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                    let result = params[0].name + '<br/>';
+                    params.forEach(item => {
+                        result += `${item.seriesName}: ${item.value} km/h<br/>`;
+                    });
+                    return result;
+                }
+            },
+            legend: {
+                data: [],
+                bottom: 10
+            },
+            xAxis: {
+                type: 'category',
+                data: []
+            },
+            yAxis: {
+                type: 'value',
+                name: '风速 (km/h)'
+            },
+            series: []
+        };
+
+        chart.setOption(option);
+        return chart;
+    }
+
+    // 初始化风速统计图表
+    function initWindStatsChart() {
+        const chart = echarts.init(document.getElementById('wind-stats-chart'));
+
+        const option = {
+            title: {
+                text: '风速统计',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: []
+            },
+            yAxis: {
+                type: 'value',
+                name: '风速 (km/h)'
+            },
+            series: [
+                {
+                    name: '最高风速',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: '#c23531'
+                    }
+                },
+                {
+                    name: '平均风速',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: '#2f4554'
+                    }
+                },
+                {
+                    name: '最低风速',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: '#61a0a8'
+                    }
+                }
+            ]
+        };
+
+        chart.setOption(option);
+        return chart;
+    }
+
+    // 处理并渲染风速数据
+    function renderWindSpeedData(data) {
+        if (!data || data.length === 0) {
+            console.warn("没有可用的风速数据");
+            document.getElementById('wind-speed-info').textContent = "暂无风速数据";
+            return false;
+        }
+
+        const sample = data[0];
+        const hours = [];
+        const values = [];
+        let validCount = 0;
+
+        // 处理24小时数据
+        for (let h = 0; h < 24; h++) {
+            const hourKey = h.toString().padStart(2, '0');
+            let value = sample.hourly_data[hourKey];
+
+            // 特殊处理null/undefined/nan值
+            if (value === null || value === undefined || value === "nan") {
+                value = null;
+            } else {
+                // 尝试转换为数值
+                try {
+                    value = parseFloat(value);
+                    if (!isNaN(value)) {
+                        hours.push(`${hourKey}:00`);
+                        values.push(value);
+                        validCount++;
+                    } else {
+                        value = null;
+                    }
+                } catch {
+                    value = null;
+                }
+            }
+        }
+
+        // 更新数据信息
+        document.getElementById('wind-speed-info').textContent =
+            `站点: ${sample.station} | 日期: ${sample.date} | 有效数据点: ${validCount}`;
+
+        // 如果有有效数据才渲染
+        if (values.length > 0) {
+            const option = windSpeedChart.getOption();
+            option.xAxis[0].data = hours;
+            option.series[0].data = values;
+            option.title[0].subtext = `${sample.station} | ${sample.date}`;
+            windSpeedChart.setOption(option);
+            return true;
+        }
+
+        return false;
+    }
+
+    // 处理并渲染风速趋势数据
+    function renderWindTrendData(data) {
+        if (!data || data.length === 0) {
+            console.warn("没有可用的风速趋势数据");
+            document.getElementById('wind-trend-info').textContent = "暂无风速趋势数据";
+            return false;
+        }
+
+        const option = windTrendChart.getOption();
+        option.legend.data = [];
+        option.series = [];
+        option.xAxis[0].data = [];
+
+        // 准备日期数据
+        const dates = [];
+        const hours = [];
+        for (let h = 0; h < 24; h++) {
+            hours.push(h.toString().padStart(2, '0') + ':00');
+        }
+        option.xAxis[0].data = hours;
+
+        // 添加每条数据线
+        data.forEach(dayData => {
+            const values = [];
+
+            for (let h = 0; h < 24; h++) {
+                const hourKey = h.toString().padStart(2, '0');
+                let value = dayData.hourly_data[hourKey];
+
+                if (value === null || value === undefined || value === "nan") {
+                    value = null;
+                } else {
+                    try {
+                        value = parseFloat(value);
+                        if (isNaN(value)) {
+                            value = null;
+                        }
+                    } catch {
+                        value = null;
+                    }
+                }
+                values.push(value);
+            }
+
+            option.legend.data.push(dayData.date);
+            option.series.push({
+                name: dayData.date,
+                type: 'line',
+                smooth: true,
+                data: values,
+                showSymbol: false,
+                lineStyle: {
+                    width: 2
+                }
+            });
+        });
+
+        // 更新图表
+        windTrendChart.setOption(option);
+
+        // 更新信息显示
+        document.getElementById('wind-trend-info').textContent =
+            `显示最近${data.length}天的风速趋势 | 站点: ${data[0].station}`;
+
+        return true;
+    }
+
+    // 处理并渲染风速统计数据
+    function renderWindStatsData(data) {
+        if (!data || data.length === 0) {
+            console.warn("没有可用的风速统计数据");
+            document.getElementById('wind-stats-info').textContent = "暂无风速统计数据";
+            return false;
+        }
+
+        const option = windStatsChart.getOption();
+        option.xAxis[0].data = [];
+        option.series[0].data = [];
+        option.series[1].data = [];
+        option.series[2].data = [];
+
+        // 计算每日统计值
+        const dates = [];
+        const maxValues = [];
+        const avgValues = [];
+        const minValues = [];
+
+        data.forEach(dayData => {
+            const values = [];
+
+            for (let h = 0; h < 24; h++) {
+                const hourKey = h.toString().padStart(2, '0');
+                let value = dayData.hourly_data[hourKey];
+
+                if (value !== null && value !== undefined && value !== "nan") {
+                    try {
+                        value = parseFloat(value);
+                        if (!isNaN(value)) {
+                            values.push(value);
+                        }
+                    } catch {
+                    }
+                }
+            }
+
+            if (values.length > 0) {
+                dates.push(dayData.date);
+                maxValues.push(Math.max(...values).toFixed(1));
+                avgValues.push((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1));
+                minValues.push(Math.min(...values).toFixed(1));
+            }
+        });
+
+        // 更新图表数据
+        option.xAxis[0].data = dates;
+        option.series[0].data = maxValues;
+        option.series[1].data = avgValues;
+        option.series[2].data = minValues;
+
+        windStatsChart.setOption(option);
+
+        // 更新信息显示
+        document.getElementById('wind-stats-info').textContent =
+            `显示最近${data.length}天的风速统计 | 站点: ${data[0].station}`;
+
+        return true;
+    }
+
+    // 从服务器加载数据
+    function loadWindData(station, days) {
+        updateStatus('loading', '正在加载风速数据...');
+
+        $.ajax({
+            url: '/api/wind_speeds',
+            type: 'GET',
+            data: {
+                station: station,
+                days: days
+            },
+            success: function (response) {
+                console.log("获取到风速数据:", response);
+
+                // 渲染所有图表
+                renderWindSpeedData(response.data);
+                renderWindTrendData(response.data);
+                renderWindStatsData(response.data);
+
+                updateStatus('success', '数据加载完成',
+                    `更新时间: ${new Date().toLocaleString()} | 站点: ${station} | 天数: ${days}`);
+            },
+            error: function (xhr, status, error) {
+                console.error("加载风速数据失败:", error);
+                updateStatus('error', '加载风速数据失败: ' + error);
+            }
+        });
+    }
+
+    // 主函数
+    $(document).ready(function () {
+        // 初始化所有图表
+        windSpeedChart = initWindSpeedChart();
+        windTrendChart = initWindTrendChart();
+        windStatsChart = initWindStatsChart();
+
+        // 设置默认值
+        const defaultStation = $('#station-select').val();
+        const defaultDays = $('#days-select').val();
+
+        // 首次加载数据
+        loadWindData(defaultStation, defaultDays);
+
+        // 绑定刷新按钮事件
+        $('#refresh-btn').click(function () {
+            const station = $('#station-select').val();
+            const days = $('#days-select').val();
+            loadWindData(station, days);
+        });
+
+        // 响应式调整
+        window.addEventListener('resize', function () {
+            windSpeedChart.resize();
+            windTrendChart.resize();
+            windStatsChart.resize();
+        });
+    });
+</script>
+</body>
+</html>

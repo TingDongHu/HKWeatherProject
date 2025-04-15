@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/bootstrap-3.4.1/css/bootstrap.min.css') }}">
+    <script src="{{ url_for('static', filename='js/jquery-migrate-1.4.1.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/new.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/head.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- 确保jQuery先加载 -->
+    <script src="{{ url_for('static', filename='js/jquery-migrate-1.4.1.js') }}"></script> <!-- 再加载jquery-migrate -->
+
+    <title>香港天气数据可视化</title>
+    <style>
+        /* 保持原有样式不变 */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+        .nav-sidebar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(75, 85, 192, 0.2);
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 10px;
+        }
+        .loading-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-loading {
+            background-color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        .status-success {
+            background-color: #28a745;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .data-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header w">
+        <div class="logo">
+            <h1>
+                <a href="/index/">香港天气数据可视化</a>
+            </h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="nav nav-sidebar">
+                    <li class="active"><a href="/index/" class="zi" style="color:black">首页</a></li>
+                    <li><a href="/weather_forecast/">天气预测</a></li>
+                    <li><a href="/wind_speeds/">风速分析</a></li>
+                    <li><a href="/rose/">风向分析</a></li>
+
+                </ul>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="loading-status">
+                    <div>
+                        <span id="status-indicator" class="status-indicator status-loading"></span>
+                        <span id="status-text">数据加载中...</span>
+                    </div>
+                    <div id="data-stats" class="text-muted"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 温度数据展示 -->
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="section-title">温度数据</h3>
+                <div class="data-info" id="temp-info"></div>
+                <div class="chart-container" id="temp-chart"></div>
+            </div>
+        </div>
+
+        <!-- 湿度数据展示 -->
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="section-title">湿度数据</h3>
+                <div class="data-info" id="humidity-info"></div>
+                <div class="chart-container" id="humidity-chart"></div>
+            </div>
+        </div>
+
+        <!-- 风速数据展示 -->
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="section-title">风速数据</h3>
+                <div class="data-info" id="wind-speed-info"></div>
+                <div class="chart-container" id="wind-speed-chart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新状态显示
+        function updateStatus(status, message, stats = '') {
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            const statsEl = document.getElementById('data-stats');
+
+            // 移除所有状态类
+            indicator.classList.remove('status-loading', 'status-success', 'status-error');
+
+            if (status === 'loading') {
+                indicator.classList.add('status-loading');
+                text.textContent = '数据加载中...';
+                statsEl.textContent = '';
+            } else if (status === 'success') {
+                indicator.classList.add('status-success');
+                text.textContent = '数据加载完成';
+                statsEl.textContent = stats;
+            } else {
+                indicator.classList.add('status-error');
+                text.textContent = message || '数据加载失败';
+                statsEl.textContent = '';
+            }
+        }
+
+        // 安全解析模板数据
+        function parseTemplateData() {
+            try {
+                // 获取原始JSON字符串并处理转义
+                const rawJson = `{{ samples | tojson | safe }}`.replace(/&quot;/g, '"');
+                console.log("原始JSON数据:", rawJson);
+
+                // 解析JSON
+                const data = JSON.parse(rawJson);
+                console.log("解析后的数据:", data);
+
+                return data;
+            } catch (e) {
+                console.error("解析模板数据失败:", e);
+                updateStatus('error', '数据解析错误: ' + e.message);
+                return null;
+            }
+        }
+
+        // 初始化图表
+        function initChart(containerId, title, unit) {
+            const chart = echarts.init(document.getElementById(containerId));
+
+            const option = {
+                title: {
+                    text: title,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        return `${params[0].name}<br/>${params[0].seriesName}: ${params[0].value} ${unit}`;
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: []
+                },
+                yAxis: {
+                    type: 'value',
+                    name: unit
+                },
+                series: [{
+                    name: title,
+                    type: 'line',
+                    smooth: true,
+                    data: [],
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(58, 77, 233, 0.8)' },
+                            { offset: 1, color: 'rgba(58, 77, 233, 0.1)' }
+                        ])
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+            return chart;
+        }
+
+        // 处理并渲染图表数据
+        function processAndRenderChart(chart, data, metricName, unit, infoElementId) {
+            if (!data || data.length === 0) {
+                console.warn(`没有可用的${metricName}数据`);
+                document.getElementById(infoElementId).textContent = `暂无${metricName}数据`;
+                return false;
+            }
+
+            const sample = data[0];
+            const hours = [];
+            const values = [];
+            let validCount = 0;
+
+            // 处理24小时数据
+            for (let h = 0; h < 24; h++) {
+                const hourKey = h.toString().padStart(2, '0');
+                let value = sample.hourly_data[hourKey];
+
+                // 特殊处理null/undefined/nan值
+                if (value === null || value === undefined || value === "nan") {
+                    value = null;
+                } else {
+                    // 尝试转换为数值
+                    try {
+                        value = parseFloat(value);
+                        if (!isNaN(value)) {
+                            hours.push(`${hourKey}:00`);
+                            values.push(value);
+                            validCount++;
+                        } else {
+                            value = null;
+                        }
+                    } catch {
+                        value = null;
+                    }
+                }
+            }
+
+            // 更新数据信息
+            const infoElement = document.getElementById(infoElementId);
+            infoElement.textContent = `站点: ${sample.station} | 日期: ${sample.date} | 有效数据点: ${validCount}`;
+
+            // 如果有有效数据才渲染
+            if (values.length > 0) {
+                const option = chart.getOption();
+                option.xAxis[0].data = hours;
+                option.series[0].data = values;
+                option.title[0].subtext = `${sample.station} | ${sample.date}`;
+                chart.setOption(option);
+                return true;
+            }
+
+            return false;
+        }
+
+        // 主函数
+        $(document).ready(function() {
+            updateStatus('loading');
+
+            // 初始化所有图表
+            const tempChart = initChart('temp-chart', '温度变化', '°C');
+            const humidityChart = initChart('humidity-chart', '湿度变化', '%');
+            const windSpeedChart = initChart('wind-speed-chart', '风速变化', 'km/h');
+
+            // 获取并处理数据
+            const samples = parseTemplateData();
+
+            if (samples) {
+                try {
+                    // 处理并渲染各图表
+                    const hasTemp = processAndRenderChart(
+                        tempChart,
+                        samples.temperature,
+                        '温度',
+                        '°C',
+                        'temp-info'
+                    );
+
+                    // 特殊处理湿度数据（可能包含浮点数）
+                    let hasHumidity = false;
+                    if (samples.humidity && samples.humidity.length > 0) {
+                        // 确保湿度数据是数组格式
+                        if (Array.isArray(samples.humidity)) {
+                            hasHumidity = processAndRenderChart(
+                                humidityChart,
+                                samples.humidity,
+                                '湿度',
+                                '%',
+                                'humidity-info'
+                            );
+                        } else {
+                            console.error("湿度数据格式不正确:", samples.humidity);
+                        }
+                    }
+
+                    const hasWindSpeed = processAndRenderChart(
+                        windSpeedChart,
+                        samples.wind_speed,
+                        '风速',
+                        'km/h',
+                        'wind-speed-info'
+                    );
+
+                    if (hasTemp || hasHumidity || hasWindSpeed) {
+                        updateStatus('success', '', `数据更新时间: ${new Date().toLocaleString()}`);
+                    } else {
+                        updateStatus('error', '没有有效天气数据');
+                    }
+                } catch (e) {
+                    console.error("数据处理错误:", e);
+                    updateStatus('error', '数据处理错误: ' + e.message);
+                }
+            }
+
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                tempChart.resize();
+                humidityChart.resize();
+                windSpeedChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>

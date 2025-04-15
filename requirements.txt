@@ -1,0 +1,6 @@
+flask~=2.2.2
+pandas~=2.0.3
+beautifulsoup4~=4.12.2
+pymongo
+datetime
+selenium

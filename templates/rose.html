@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/bootstrap-3.4.1/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/head.css') }}">
+    <title>风向玫瑰图</title>
+    <style>
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+
+        .nav-sidebar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(75, 85, 192, 0.2);
+        }
+
+        .nav-sidebar li {
+            margin-right: 10px;
+        }
+
+        .nav-sidebar li a {
+            color: black;
+        }
+
+        .container {
+            margin-top: 30px;
+            height: calc(100vh - 180px);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+
+        .data-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .loading-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-loading {
+            background-color: #ffc107;
+        }
+
+        .status-success {
+            background-color: #28a745;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .control-item label {
+            margin-right: 8px;
+            font-weight: normal;
+            min-width: 60px;
+        }
+    </style>
+</head>
+<body>
+<header class="header w">
+    <div class="logo">
+        <h1>
+            <a href="/index/">香港天气预测可视化系统</a>
+        </h1>
+    </div>
+</header>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <ul class="nav nav-sidebar">
+                <li><a href="/index/">首页</a></li>
+                <li><a href="/weather_forecast/">天气预测</a></li>
+                <li><a href="/wind_speeds/">风速分析</a></li>
+                <li class="active"><a href="/rose/" class="zi" style="color:black">风向分析</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="data-card">
+                <h3>风向玫瑰图</h3>
+                <div class="control-panel">
+                    <div class="control-item">
+                        <label for="station-select">站点:</label>
+                        <select id="station-select" class="form-control input-sm">
+                            <option value="長洲">長洲</option>
+                            <option value="赤鱲角">赤鱲角</option>
+                            <option value="香港天文台">香港天文台</option>
+                            <option value="黃竹坑">黃竹坑</option>
+                            <option value="將軍澳">將軍澳</option>
+                            <option value="流浮山">流浮山</option>
+                            <option value="坪洲">坪洲</option>
+                            <option value="石崗">石崗</option>
+                            <option value="沙田">沙田</option>
+                            <option value="西貢">西貢</option>
+                            <option value="打鼓嶺">打鼓嶺</option>
+                            <option value="大埔">大埔</option>
+                            <option value="屯門">屯門</option>
+                            <option value="青衣">青衣</option>
+                            <option value="橫瀾島">橫瀾島</option>
+                            <option value="上水">上水</option>
+                            <option value="承啟道多功能智慧燈柱">承啟道多功能智慧燈柱</option>
+                            <option value="觀塘市中心多功能智慧燈柱">觀塘市中心多功能智慧燈柱</option>
+                            <option value="旺角空氣質素監測站">旺角空氣質素監測站</option>
+                            <option value="天星碼頭(尖沙咀)">天星碼頭(尖沙咀)</option>
+                            <option value="大環山公園">大環山公園</option>
+                            <option value="啟德工業貿易大樓">啟德工業貿易大樓</option>
+                            <option value="香港中文大學(大學站)">香港中文大學(大學站)</option>
+                            <option value="香港中文大學(伍宜孫書院)">香港中文大學(伍宜孫書院)</option>
+                            <option value="保良局胡忠中學">保良局胡忠中學</option>
+                            <option value="香港海事博物館">香港海事博物館</option>
+                            <option value="維多利亞公園">維多利亞公園</option>
+                        </select>
+
+                    </div>
+                    <div class="control-item">
+                        <label for="days-select">天数:</label>
+                        <select id="days-select" class="form-control input-sm">
+                            <option value="7" selected>未来7天</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <button id="refresh-btn" class="btn btn-primary btn-sm">刷新数据</button>
+                    </div>
+                </div>
+                <div id="data-info" class="loading-status">
+                    <div>
+                        <span id="status-indicator" class="status-indicator status-loading"></span>
+                        <span id="status-text">数据加载中...</span>
+                    </div>
+                    <div id="data-stats"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="height: calc(100% - 120px);">
+        <div class="col-md-12" style="height: 100%;">
+            <div class="chart-container" id="wind-rose-chart"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始化图表
+    const chartDom = document.getElementById('wind-rose-chart');
+    const myChart = echarts.init(chartDom);
+
+    // 设置默认选项
+    let option = {
+        title: {
+            text: '风向玫瑰图',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item',
+            formatter: '{a} <br/>{b}: {c} ({d}%)'
+        },
+        legend: {
+            top: '5%',
+            left: 'center',
+            data: []
+        },
+        series: [
+            {
+                name: '风向分布',
+                type: 'pie',
+                radius: ['30%', '70%'],
+                center: ['50%', '50%'],
+                roseType: 'radius',
+                itemStyle: {
+                    borderRadius: 8,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    formatter: '{b}: {d}%'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: '18',
+                        fontWeight: 'bold'
+                    }
+                },
+                data: []
+            }
+        ]
+    };
+
+    // 设置加载状态
+    function setLoadingState(isLoading, message = '') {
+        const indicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+
+        if (isLoading) {
+            indicator.className = 'status-indicator status-loading';
+            statusText.textContent = message || '数据加载中...';
+        } else if (message.includes('失败')) {
+            indicator.className = 'status-indicator status-error';
+            statusText.textContent = message;
+        } else {
+            indicator.className = 'status-indicator status-success';
+            statusText.textContent = message || '数据加载完成';
+        }
+    }
+
+    // 加载数据函数
+    function loadWindRoseData() {
+        const station = $('#station-select').val();
+        const days = $('#days-select').val();
+
+        setLoadingState(true, `正在加载${station}站${days}天数据...`);
+
+        $.ajax({
+            url: `/api/wind_rose/${station}/${days}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                if (response.status === 'success') {
+                    updateChart(response.data);
+                    updateStats(response.data);
+                    setLoadingState(false, `数据加载完成 (${response.data.time_range})`);
+                } else {
+                    setLoadingState(false, `数据加载失败: ${response.message}`);
+                }
+            },
+            error: function (xhr, status, error) {
+                setLoadingState(false, `请求失败: ${error}`);
+            }
+        });
+    }
+
+    // 更新图表函数
+    function updateChart(data) {
+        const directions = data.directions;
+
+        // 准备图表数据
+        const chartData = directions.map(item => {
+            return {
+                value: item.percentage,
+                name: item.direction,
+                itemStyle: {
+                    color: getDirectionColor(item.direction)
+                }
+            };
+        });
+
+        // 更新图表选项
+        option.series[0].data = chartData;
+        option.title.text = `${data.station}站风向分布`;
+
+        myChart.setOption(option, true);
+
+        // 响应式调整
+        window.addEventListener('resize', function () {
+            myChart.resize();
+        });
+    }
+
+    // 更新统计信息
+    function updateStats(data) {
+        const directions = data.directions;
+        const total = directions.reduce((sum, item) => sum + item.count, 0);
+        const dominant = directions.reduce((prev, current) =>
+            (prev.percentage > current.percentage) ? prev : current
+        );
+
+        const statsHtml = `
+                <span>总样本数: ${total}</span> |
+                <span>主导风向: ${dominant.direction} (${dominant.percentage}%)</span>
+            `;
+
+        $('#data-stats').html(statsHtml);
+    }
+
+    // 获取方向对应的颜色
+    function getDirectionColor(direction) {
+        const colors = {
+            '北': '#5470C6',
+            '东北': '#91CC75',
+            '东': '#FAC858',
+            '东南': '#EE6666',
+            '南': '#73C0DE',
+            '西南': '#3BA272',
+            '西': '#FC8452',
+            '西北': '#9A60B4'
+        };
+        return colors[direction] || '#c23531';
+    }
+
+    // 页面加载时初始化
+    $(document).ready(function () {
+        // 初始化图表
+        myChart.setOption(option);
+
+        // 加载初始数据
+        loadWindRoseData();
+
+        // 绑定刷新按钮事件
+        $('#refresh-btn').click(loadWindRoseData);
+
+        // 绑定下拉菜单变化事件
+        $('#station-select, #days-select').change(loadWindRoseData);
+    });
+</script>
+</body>
+</html>

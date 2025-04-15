@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预测 - 香港天气预测可视化系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/head.css') }}">
+    <style>
+        /* 统一使用风速分析页面的样式 */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+
+        .nav-sidebar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(75, 85, 192, 0.2);
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .loading-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-loading {
+            background-color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-success {
+            background-color: #28a745;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .station-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .data-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<header class="header w">
+    <div class="logo">
+        <h1><a href="/index/">香港天气预测可视化系统</a></h1>
+    </div>
+</header>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <ul class="nav nav-sidebar">
+                <li><a href="/index/">首页</a></li>
+                <li class="active"><a href="/weather_forecast/" class="zi" style="color:black">天气预测</a></li>
+                <li><a href="/wind_speeds/">风速分析</a></li>
+                <li><a href="/rose/">风向分析</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="loading-status">
+                <div>
+                    <span id="status-indicator" class="status-indicator status-loading"></span>
+                    <span id="status-text">数据加载中...</span>
+                </div>
+                <div id="data-stats" class="text-muted"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 控制面板 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="station-controls">
+                <div class="form-group">
+                    <label for="station-select">选择气象站:</label>
+                    <select class="form-control" id="station-select">
+                        <option value="沙田">沙田</option>
+                        <option value="長洲">長洲</option>
+                        <option value="赤鱲角">赤鱲角</option>
+                        <option value="香港天文台">香港天文台</option>
+                        <option value="黃竹坑">黃竹坑</option>
+                        <option value="將軍澳">將軍澳</option>
+                        <option value="流浮山">流浮山</option>
+                        <option value="坪洲">坪洲</option>
+                        <option value="石崗">石崗</option>
+                        <option value="西貢">西貢</option>
+                        <option value="打鼓嶺">打鼓嶺</option>
+                        <option value="大埔">大埔</option>
+                        <option value="屯門">屯門</option>
+                        <option value="青衣">青衣</option>
+                        <option value="橫瀾島">橫瀾島</option>
+                        <option value="上水">上水</option>
+                        <option value="承啟道多功能智慧燈柱">承啟道多功能智慧燈柱</option>
+                        <option value="觀塘市中心多功能智慧燈柱">觀塘市中心多功能智慧燈柱</option>
+                        <option value="旺角空氣質素監測站">旺角空氣質素監測站</option>
+                        <option value="天星碼頭(尖沙咀)">天星碼頭(尖沙咀)</option>
+                        <option value="大環山公園">大環山公園</option>
+                        <option value="啟德工業貿易大樓">啟德工業貿易大樓</option>
+                        <option value="香港中文大學(大學站)">香港中文大學(大學站)</option>
+                        <option value="香港中文大學(伍宜孫書院)">香港中文大學(伍宜孫書院)</option>
+                        <option value="保良局胡忠中學">保良局胡忠中學</option>
+                        <option value="香港海事博物館">香港海事博物館</option>
+                        <option value="維多利亞公園">維多利亞公園</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="days-select">预测天数:</label>
+                    <select class="form-control" id="days-select">
+                        <option value="7">7天</option>
+                    </select>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary">获取预报</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期选项卡 -->
+    <div class="row">
+        <div class="col-md-12">
+            <ul class="nav nav-tabs" id="day-tabs">
+                <li class="active"><a href="#day-0" data-toggle="tab">第1天</a></li>
+                <!-- 其他日期标签将通过JS动态生成 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- 图表容器 -->
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="section-title">天气预测</h3>
+            <div class="data-info" id="weather-info"></div>
+            <div class="chart-container" id="weather-chart"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // 状态管理函数
+        function updateStatus(status, message, stats = '') {
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('status-text');
+            const statsEl = document.getElementById('data-stats');
+
+            indicator.className = 'status-indicator';
+
+            switch (status) {
+                case 'loading':
+                    indicator.classList.add('status-loading');
+                    text.textContent = message || '数据加载中...';
+                    statsEl.textContent = '';
+                    break;
+                case 'success':
+                    indicator.classList.add('status-success');
+                    text.textContent = message || '数据加载完成';
+                    statsEl.textContent = stats;
+                    break;
+                case 'error':
+                    indicator.classList.add('status-error');
+                    text.textContent = message || '数据加载失败';
+                    statsEl.textContent = '';
+                    break;
+            }
+        }
+
+        // 获取预报数据
+        $('#refresh-btn').on('click', function () {
+            const station = $('#station-select').val();
+            const days = $('#days-select').val();
+
+            updateStatus('loading', '正在加载天气数据...');
+
+            $.ajax({
+                url: '/api/weather_forecasts',
+                data: {station: station, days: days},
+                method: 'GET',
+                success: function (response) {
+                    if (response.status === 'success') {
+                        renderWeatherData(response.data);
+                        updateStatus('success', '数据加载完成',
+                            `更新时间: ${new Date().toLocaleString()} | 站点: ${station} | 天数: ${days}`);
+                    } else {
+                        updateStatus('error', response.message || '获取数据失败');
+                    }
+                },
+                error: function () {
+                    updateStatus('error', '请求失败，请检查网络连接');
+                }
+            });
+        });
+
+        // 渲染天气数据
+        function renderWeatherData(data) {
+            if (!data || data.length === 0) {
+                updateStatus('error', '没有找到预报数据');
+                return;
+            }
+
+            // 生成日期选项卡
+            const $tabs = $('#day-tabs');
+            $tabs.empty();
+
+            data.forEach((dayData, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+                $tabs.append(`
+                <li class="${activeClass}">
+                    <a href="#day-${index}" data-toggle="tab">${dayData.date}</a>
+                </li>
+            `);
+            });
+
+            // 初始化第一个日期的图表
+            renderDayChart(data[0]);
+
+            // 选项卡切换事件
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                const dayIndex = parseInt($(e.target).attr('href').split('-')[1]);
+                renderDayChart(data[dayIndex]);
+            });
+        }
+
+        // 渲染单日天气图表
+        function renderDayChart(dayData) {
+            const chart = echarts.init(document.getElementById('weather-chart'));
+
+            // 准备数据
+            const hours = [];
+            const weatherData = [];
+
+            for (let h = 0; h < 24; h++) {
+                const hourKey = h.toString().padStart(2, '0');
+                const weather = dayData.hourly_data[hourKey] || '未知';
+
+                hours.push(`${hourKey}:00`);
+                weatherData.push({
+                    value: getWeatherValue(weather),
+                    weather: weather,
+                    hour: `${hourKey}:00`
+                });
+            }
+
+            // 图表配置（添加了渐变色）
+            const option = {
+                title: {
+                    text: `${dayData.station} - ${dayData.date}`,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        const data = params[0].data;
+                        return `
+                        <strong>时间:</strong> ${data.hour}<br/>
+                        <strong>天气:</strong> ${data.weather}<br/>
+                        <div style="font-size:24px;text-align:center">${getWeatherIcon(data.weather)}</div>
+                    `;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: hours,
+                    axisLabel: {
+                        interval: 2,
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 10,
+                    axisLabel: {
+                        formatter: function (value) {
+                            return getWeatherByValue(value);
+                        }
+                    },
+                    splitLine: {
+                        show: false
+                    }
+                },
+                visualMap: {
+                    show: false,
+                    top: 10,
+                    right: 10,
+                    pieces: [
+                        {min: 8, max: 10, color: '#FFD700'},  // 阳光充沛 - 金色
+                        {min: 6, max: 8, color: '#FFA500'},   // 天色良好 - 橙色
+                        {min: 4, max: 6, color: '#87CEEB'},    // 多云 - 天蓝色
+                        {min: 2, max: 4, color: '#1E90FF'},   // 阴天 - 道奇蓝
+                        {min: 0, max: 2, color: '#8B008B'}     // 雨 - 深紫色
+                    ],
+                    outOfRange: {
+                        color: '#999'
+                    }
+                },
+                series: [{
+                    name: '天气变化',
+                    type: 'line',
+                    symbol: 'circle',
+                    symbolSize: 12,
+                    lineStyle: {
+                        width: 3,
+                        shadowColor: 'rgba(0, 0, 0, 0.2)',
+                        shadowBlur: 10,
+                        shadowOffsetY: 5
+                    },
+                    itemStyle: {
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    },
+                    data: weatherData,
+                    markLine: {
+                        silent: true,
+                        data: [{
+                            type: 'average',
+                            name: '平均',
+                            lineStyle: {
+                                color: '#FF6347',
+                                width: 2,
+                                type: 'dashed'
+                            },
+                            label: {
+                                position: 'end',
+                                formatter: '平均',
+                                color: '#FF6347'
+                            }
+                        }]
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+
+            // 更新信息显示
+            document.getElementById('weather-info').textContent =
+                `站点: ${dayData.station} | 日期: ${dayData.date} | 天气变化趋势`;
+
+            // 窗口大小变化时重新调整图表
+            $(window).on('resize', function () {
+                chart.resize();
+            });
+
+            return chart;
+        }
+
+        // 辅助函数 - 获取天气对应的数值
+        function getWeatherValue(weather) {
+            const weatherMap = {
+                '阳光充沛': 10,
+                '天色良好': 9,
+                '天色大致良好': 8,
+                '间有阳光': 7,
+                '短暂阳光': 6,
+                '大致多云': 5,
+                '多云': 4,
+                '阴天': 3,
+                '微雨': 2,
+                '小雨': 1,
+                '大雨': 0,
+                '未知': 5
+            };
+            return weatherMap[weather] || 5;
+        }
+
+        // 辅助函数 - 根据数值获取天气
+        function getWeatherByValue(value) {
+            const weathers = {
+                10: '阳光充沛',
+                9: '天色良好',
+                8: '天色大致良好',
+                7: '间有阳光',
+                6: '短暂阳光',
+                5: '大致多云',
+                4: '多云',
+                3: '阴天',
+                2: '微雨',
+                1: '小雨',
+                0: '大雨'
+            };
+            return weathers[Math.round(value)] || '未知';
+        }
+
+        // 辅助函数 - 获取天气图标
+        function getWeatherIcon(weather) {
+            const icons = {
+                '阳光充沛': '☀️',
+                '天色良好': '🌤️',
+                '天色大致良好': '⛅',
+                '间有阳光': '🌥️',
+                '短暂阳光': '🌤️',
+                '大致多云': '☁️',
+                '多云': '☁️',
+                '阴天': '☁️',
+                '微雨': '🌧️',
+                '小雨': '🌧️',
+                '大雨': '🌧️',
+                '未知': '❓'
+            };
+            return icons[weather] || '❓';
+        }
+
+        // 默认加载数据
+        $('#refresh-btn').click();
+    });
+</script>
+</body>
+</html>

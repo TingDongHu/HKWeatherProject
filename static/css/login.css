@@ -1,0 +1,176 @@
+*{
+    padding: 0;
+    margin: 0;
+}
+.con{
+    background-image: url("../img/b1.jpg");
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+    background-size:100% 100%;
+    opacity: 0.9;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    height:86vh;
+}
+h1 {
+    font-weight:bold;
+}
+p {
+    font-size:14px;
+    line-height:20px;
+    letter-spacing:.5px;
+    margin:15px 0 30px;
+}
+span {
+    font-size:12px;
+}
+a {
+    color:#333;
+    font-size:14px;
+    text-decoration:none;
+    margin:15px 0;
+}
+.login {
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 36px 39px rgba(0,0,0,.26),0 10px 10px rgba(0,0,0,.26);
+    position:relative;
+    overflow:hidden;
+    width:768px;
+    max-width:100%;
+    min-height:480px;
+}
+.login_logo form {
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    padding:0 50px;
+    height:100%;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+}
+.social-container {
+    margin:20px 0;
+}
+.social-container a {
+    border:1px solid #ddd;
+    border-radius:50%;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    margin:0 5px;
+    height:40px;
+    width:40px;
+}
+.social-container a:hover {
+    background-color:#eee;
+}
+.login_logo input {
+    background:#eee;
+    border:none;
+    padding:12px 15px;
+    margin:8px 0;
+    width:100%;
+    outline:none;
+}
+.login_logo input[value=登录]{
+    border-radius:20px;
+    border:1px solid #137ef8;
+    background:#137ef8;
+    color:#fff;
+    font-size:12px;
+    font-weight:bold;
+    padding:12px 45px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    transition:transform 80ms ease-in;
+    cursor:pointer;
+    opacity: 0.7;
+    margin-top: 20px;
+}
+.login_logo input[value=登录]:active {
+    transform:scale(.95);
+}
+.login_logo input[value=登录]:focus {
+    outline:none;
+}
+.login_logo input[value=登录].host {
+    background:transparent;
+    border-color:#fff;
+}
+button {
+    border-radius:20px;
+    border:1px solid #137ef8;
+    background:#137ef8;
+    color:#fff;
+    font-size:12px;
+    font-weight:bold;
+    padding:12px 45px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    transition:transform 80ms ease-in;
+    cursor:pointer;
+}
+button:active {
+    transform:scale(.95);
+}
+button:focus {
+    outline:none;
+}
+button.click {
+    background:transparent;
+    border-color:#fff;
+}
+.login_logo {
+    position:absolute;
+    top:0;
+    height:100%;
+    transition:all .6s ease-in-out;
+}
+.sign-in-container {
+    left:0;
+    width:50%;
+    z-index:2;
+}
+.other_box{
+    position:absolute;
+    top:0;
+    left:50%;
+    width:50%;
+    height:100%;
+    overflow:hidden;
+    transition:transform .6s ease-in-out;
+    z-index:100;
+}
+.other{
+    background: #acc7ff;
+    background:linear-gradient(to right, #8dc0ff, #198dee) no-repeat 0 0 / cover;
+    color:#fff;
+    position:relative;
+    left:-100%;
+    height:100%;
+    width:200%;
+    transform:translateY(0);
+    transition:transform .6s ease-in-out;
+}
+.overlay-panel{
+    position:absolute;
+    top:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:0 40px;
+    height:100%;
+    width:50%;
+    text-align:center;
+    transform:translateY(0);
+    transition:transform .6s ease-in-out;
+}
+.overlay-right{
+    right:0;
+    transform:translateY(0);
+}
